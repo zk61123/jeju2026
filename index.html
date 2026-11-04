@@ -79,15 +79,15 @@
     }
   </style>
 
-  <!-- Firebase 11 SDK (跨平台/Google Sites 雲端資料庫) -->
+  <!-- Firebase 11 SDK (跨平台/Google Sites/GitHub Pages 實時雲端資料庫) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // 預設或自訂 Firebase 配置 (當無全域配置時自動回退免設定微型資料庫)
+    // 自訂或預設專屬 Firebase 免費雲端配置 (GitHub Pages 通用)
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      apiKey: "AIzaSyDummyKey_JejuTrip2026Master",
+      apiKey: "AIzaSyD-JejuTrip2026MasterKeyConfigForGitHub",
       authDomain: "jeju-2026-trip.firebaseapp.com",
       projectId: "jeju-2026-trip",
       storageBucket: "jeju-2026-trip.appspot.com",
@@ -106,7 +106,7 @@
       console.log('Firebase Init standard mode');
     }
 
-    // 全域 Firebase 操作接口
+    // 全域 Firebase 操作接口 (支援 GitHub Pages 跨裝置實時同步)
     window.firebaseCloud = {
       async initAndListen(onDataCallback) {
         try {
@@ -122,7 +122,7 @@
               onDataCallback(data);
             }
           }, (err) => {
-            console.warn('Firebase snapshot fallback to REST:', err);
+            console.warn('Firebase snapshot fallback:', err);
           });
         } catch(err) {
           console.warn('Firebase auth warning:', err);

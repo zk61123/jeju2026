@@ -86,18 +86,18 @@
 
     // 💡 請在此處貼上您於 Firebase Console 申請到的免費專案金鑰
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAox4DjkW8QxeELAU9ixO3ogFkqM5RuPGU",
+      authDomain: "jeju2026-b843e.firebaseapp.com",
+      projectId: "jeju2026-b843e",
+      storageBucket: "jeju2026-b843e.firebasestorage.app",
+      messagingSenderId: "299140457945",
+      appId: "1:299140457945:web:630d5420d1d02776a6e5c8"
     };
 
     // 初始化 Firebase
     let db = null;
     try {
-      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+      if (firebaseConfig.apiKey !== "AIzaSyAox4DjkW8QxeELAU9ixO3ogFkqM5RuPGU") {
         const app = initializeApp(firebaseConfig);
         db = getFirestore(app);
       }

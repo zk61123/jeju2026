@@ -79,55 +79,57 @@
     }
   </style>
 
-  <!-- 全網跨設備即時雲端儲存 API 引擎 (JSONBin Universal CORS Engine) -->
+  <!-- 純雲端優先同步引擎 (Cloud-First Engine - Zero LocalStorage) -->
   <script>
-    const CLOUD_MASTER_BIN = '672809e5e41b4d34e44e2ad2';
-    const CLOUD_MASTER_URL = `https://api.jsonbin.io/v3/b/${CLOUD_MASTER_BIN}`;
+    const CLOUD_RECORD_ID = '9b2e8a1d-74c0-4f5a-b6d3-8e9f1a2b3c4d';
+    const CLOUD_API_ENDPOINT = `https://api.myjson.online/v1/records/${CLOUD_RECORD_ID}`;
 
     window.cloudEngine = {
+      // 1. 強制直接讀取雲端最新資料 (不讀取本機暫存)
       async loadData() {
         try {
-          const response = await fetch(`${CLOUD_MASTER_URL}/latest?t=${Date.now()}`, {
+          const res = await fetch(`https://api.jsonbin.io/v3/b/672809e5e41b4d34e44e2ad2/latest?t=${Date.now()}`, {
             method: 'GET',
             headers: {
-              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.' // Public Access Token
+              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.'
             },
             cache: 'no-store'
           });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result && result.record && result.record.locations) {
-              return result.record;
+          if (res.ok) {
+            const json = await res.json();
+            if (json && json.record && json.record.locations) {
+              return json.record;
             }
           }
-        } catch (e) {
-          console.warn('雲端載入重試中...', e);
+        } catch (err) {
+          console.warn('雲端讀取異常:', err);
         }
         return null;
       },
 
+      // 2. 強制優先寫入雲端伺服器
       async saveData(locations, itineraryData, lastEditInfo) {
         const payload = {
-          locations,
-          itineraryData,
-          lastEditInfo,
-          updatedAt: Date.now()
+          record: {
+            locations,
+            itineraryData,
+            lastEditInfo,
+            updatedAt: Date.now()
+          }
         };
 
         try {
-          const response = await fetch(CLOUD_MASTER_URL, {
+          const res = await fetch('https://api.jsonbin.io/v3/b/672809e5e41b4d34e44e2ad2', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload.record)
           });
-
-          return response.ok;
-        } catch (e) {
-          console.error('雲端寫入異常:', e);
+          return res.ok;
+        } catch (err) {
+          console.error('雲端儲存異常:', err);
           return false;
         }
       }
@@ -568,16 +570,16 @@
       { id: 'that_summer', name: '那年夏天 (그해여름)', krName: '그해여름', category: 'cafe', region: 'NW', url: 'https://naver.me/Galdnkdi', note: '翰京面洪水岩路鄉村咖啡', icon: '☕', coords: { x: 12, y: 55 } }
     ];
 
-    // Global State
-    let locations = JSON.parse(localStorage.getItem('jeju_spots')) || defaultLocations;
-    let lastEditInfo = JSON.parse(localStorage.getItem('jeju_last_edit')) || {
+    // Global State (純雲端記憶體)
+    let locations = defaultLocations;
+    let lastEditInfo = {
       time: '2026/11/04 10:30',
       editor: '系統預設'
     };
     let activeRegion = 'ALL';
     let activeCategory = 'ALL';
     let searchQuery = '';
-    let currentFontSize = localStorage.getItem('jeju_font_size') || 'sm';
+    let currentFontSize = 'sm';
 
     const itineraryDates = [
       { day: 1, date: '12/11 (五)', label: '第一天：抵達與市區' },
@@ -588,9 +590,7 @@
       { day: 6, date: '12/16 (三)', label: '第六天：採買與歸途' }
     ];
 
-    let itineraryData = JSON.parse(localStorage.getItem('jeju_itinerary')) || {
-      1: [], 2: [], 3: [], 4: [], 5: [], 6: []
-    };
+    let itineraryData = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
 
     window.onload = function() {
       detectAndApplyDeviceLayout();
@@ -601,11 +601,11 @@
       renderItineraryPlanner();
       applyFiltersAndRender();
 
-      // 載入即自動同步雲端最新數據
+      // 1. 開啟時直接連線雲端資料庫
       fetchCloudData();
 
-      // 每 10 秒自動輪詢雲端最新變更 (全體夥伴自動同步)
-      setInterval(fetchCloudData, 10000);
+      // 2. 每 8 秒自動輪詢雲端最新狀況
+      setInterval(fetchCloudData, 8000);
     };
 
     async function fetchCloudData() {
@@ -616,15 +616,38 @@
         itineraryData = data.itineraryData || itineraryData;
         lastEditInfo = data.lastEditInfo || lastEditInfo;
 
-        localStorage.setItem('jeju_spots', JSON.stringify(locations));
-        localStorage.setItem('jeju_itinerary', JSON.stringify(itineraryData));
-        localStorage.setItem('jeju_last_edit', JSON.stringify(lastEditInfo));
-
         updateLastEditBadge();
         renderItineraryPlanner();
         applyFiltersAndRender();
       }
     }
+
+    // 存檔按鍵專屬處理：純雲端上傳
+    async function manualSaveToCloud() {
+      const icon = document.getElementById('saveBtnIcon');
+      if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+
+      const now = new Date();
+      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      lastEditInfo = {
+        time: formattedTime,
+        editor: lastEditInfo.editor || '同行夥伴'
+      };
+
+      const success = await window.cloudEngine.saveData(locations, itineraryData, lastEditInfo);
+
+      if (icon) icon.className = 'fa-solid fa-cloud-arrow-up';
+
+      if (success) {
+        updateLastEditBadge();
+        alert('✅ 雲端同步存檔成功！\n現在其他成員不論在哪台設備開啟網頁，均會顯示您剛存檔的最新內容！');
+      } else {
+        alert('❌ 雲端傳輸失敗，請確認網路連線是否正常後再試一次！');
+      }
+    }
+
+    function saveLocationsToStorage() {}
+    function saveItineraryToStorage() {}
 
     window.addEventListener('resize', detectAndApplyDeviceLayout);
 

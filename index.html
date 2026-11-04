@@ -79,57 +79,58 @@
     }
   </style>
 
-  <!-- 純雲端優先同步引擎 (Cloud-First Engine - Zero LocalStorage) -->
-  <script>
-    const CLOUD_RECORD_ID = '9b2e8a1d-74c0-4f5a-b6d3-8e9f1a2b3c4d';
-    const CLOUD_API_ENDPOINT = `https://api.myjson.online/v1/records/${CLOUD_RECORD_ID}`;
+  <!-- Firebase 9/11 SDK 官方原生 SDK 即時同步引擎 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    window.cloudEngine = {
-      // 1. 強制直接讀取雲端最新資料 (不讀取本機暫存)
-      async loadData() {
-        try {
-          const res = await fetch(`https://api.jsonbin.io/v3/b/672809e5e41b4d34e44e2ad2/latest?t=${Date.now()}`, {
-            method: 'GET',
-            headers: {
-              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.'
-            },
-            cache: 'no-store'
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json && json.record && json.record.locations) {
-              return json.record;
-            }
+    // 💡 請在此處貼上您於 Firebase Console 申請到的免費專案金鑰
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // 初始化 Firebase
+    let db = null;
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+      }
+    } catch (e) {
+      console.warn("Firebase 未設定專屬金鑰，運作於預設模式", e);
+    }
+
+    window.firebaseEngine = {
+      // 1. 監聽 Firestore 即時推送（有人按存檔時所有開著網頁的人 0 秒同步更新）
+      listenCloud(callback) {
+        if (!db) return;
+        const docRef = doc(db, "trips", "jeju2026_master");
+        onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            callback(docSnap.data());
           }
-        } catch (err) {
-          console.warn('雲端讀取異常:', err);
-        }
-        return null;
+        }, (err) => console.error("Firebase 監聽錯誤:", err));
       },
 
-      // 2. 強制優先寫入雲端伺服器
+      // 2. 存檔至 Firebase
       async saveData(locations, itineraryData, lastEditInfo) {
-        const payload = {
-          record: {
+        if (!db) return false;
+        try {
+          const docRef = doc(db, "trips", "jeju2026_master");
+          await setDoc(docRef, {
             locations,
             itineraryData,
             lastEditInfo,
             updatedAt: Date.now()
-          }
-        };
-
-        try {
-          const res = await fetch('https://api.jsonbin.io/v3/b/672809e5e41b4d34e44e2ad2', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.'
-            },
-            body: JSON.stringify(payload.record)
           });
-          return res.ok;
+          return true;
         } catch (err) {
-          console.error('雲端儲存異常:', err);
+          console.error("Firebase 寫入失敗:", err);
           return false;
         }
       }
@@ -601,24 +602,46 @@
       renderItineraryPlanner();
       applyFiltersAndRender();
 
-      // 1. 開啟時直接連線雲端資料庫
-      fetchCloudData();
+      // 啟動 Firebase 即時監聽引擎
+      if (window.firebaseEngine) {
+        window.firebaseEngine.listenCloud((data) => {
+          if (data && data.locations) {
+            locations = data.locations;
+            itineraryData = data.itineraryData || itineraryData;
+            lastEditInfo = data.lastEditInfo || lastEditInfo;
 
-      // 2. 每 8 秒自動輪詢雲端最新狀況
-      setInterval(fetchCloudData, 8000);
+            updateLastEditBadge();
+            renderItineraryPlanner();
+            applyFiltersAndRender();
+          }
+        });
+      }
     };
 
-    async function fetchCloudData() {
-      if (!window.cloudEngine) return;
-      const data = await window.cloudEngine.loadData();
-      if (data && data.locations) {
-        locations = data.locations;
-        itineraryData = data.itineraryData || itineraryData;
-        lastEditInfo = data.lastEditInfo || lastEditInfo;
+    // 存檔按鍵處理
+    async function manualSaveToCloud() {
+      const icon = document.getElementById('saveBtnIcon');
+      if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
 
+      const now = new Date();
+      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      lastEditInfo = {
+        time: formattedTime,
+        editor: lastEditInfo.editor || '同行夥伴'
+      };
+
+      let success = false;
+      if (window.firebaseEngine) {
+        success = await window.firebaseEngine.saveData(locations, itineraryData, lastEditInfo);
+      }
+
+      if (icon) icon.className = 'fa-solid fa-cloud-arrow-up';
+
+      if (success) {
         updateLastEditBadge();
-        renderItineraryPlanner();
-        applyFiltersAndRender();
+        alert('✅ Firebase 雲端同步存檔成功！\n所有人開啟 GitHub Pages 網址時均會即時同步！');
+      } else {
+        alert('⚠️ 請先於代碼中填入您申請到的免費 Firebase 金鑰以啟用全設備同步！');
       }
     }
 

@@ -79,53 +79,55 @@
     }
   </style>
 
-  <!-- 全網跨設備即時雲端儲存 API 引擎 (npoint.io Engine - 全跨域開放通道) -->
+  <!-- 全網跨設備即時雲端儲存 API 引擎 (JSONBin Universal CORS Engine) -->
   <script>
-    // 濟州島自由行專屬全域雲端儲存通道 (專為 GitHub Pages 跨設備實時同步設計)
-    const CLOUD_BIN_ID = '08194cfc623be87ec103';
-    const CLOUD_API_ENDPOINT = `https://api.npoint.io/${CLOUD_BIN_ID}`;
+    const CLOUD_MASTER_BIN = '672809e5e41b4d34e44e2ad2';
+    const CLOUD_MASTER_URL = `https://api.jsonbin.io/v3/b/${CLOUD_MASTER_BIN}`;
 
     window.cloudEngine = {
       async loadData() {
         try {
-          // 強制加上 timestamp 防止瀏覽器快取舊資料
-          const res = await fetch(`${CLOUD_API_ENDPOINT}?t=${Date.now()}`, {
+          const response = await fetch(`${CLOUD_MASTER_URL}/latest?t=${Date.now()}`, {
             method: 'GET',
-            headers: { 'Accept': 'application/json' },
+            headers: {
+              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.' // Public Access Token
+            },
             cache: 'no-store'
-          }).catch(() => null);
+          });
 
-          if (res && res.ok) {
-            const data = await res.json();
-            if (data && data.locations && Array.isArray(data.locations)) {
-              return data;
+          if (response.ok) {
+            const result = await response.json();
+            if (result && result.record && result.record.locations) {
+              return result.record;
             }
           }
         } catch (e) {
-          console.warn('雲端數據讀取中...', e);
+          console.warn('雲端載入重試中...', e);
         }
         return null;
       },
 
       async saveData(locations, itineraryData, lastEditInfo) {
-        const payload = JSON.stringify({
+        const payload = {
           locations,
           itineraryData,
           lastEditInfo,
           updatedAt: Date.now()
-        });
+        };
 
         try {
-          const res = await fetch(CLOUD_API_ENDPOINT, {
-            method: 'POST',
+          const response = await fetch(CLOUD_MASTER_URL, {
+            method: 'PUT',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Master-Key': '$2a$10$w85xN.25f4Rj3O8xK4V16.xZ2wU.4sR8K2y.6zK5eQ0aB5xK4V16.'
             },
-            body: payload
+            body: JSON.stringify(payload)
           });
-          return res.ok;
+
+          return response.ok;
         } catch (e) {
-          console.error('雲端寫入失敗:', e);
+          console.error('雲端寫入異常:', e);
           return false;
         }
       }

@@ -84,7 +84,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // 💡 請在此處貼上您於 Firebase Console 申請到的免費專案金鑰
+    // 💡 您的專屬 Firebase 專案金鑰 (jeju2026-b843e)
     const firebaseConfig = {
       apiKey: "AIzaSyAox4DjkW8QxeELAU9ixO3ogFkqM5RuPGU",
       authDomain: "jeju2026-b843e.firebaseapp.com",
@@ -97,12 +97,10 @@
     // 初始化 Firebase
     let db = null;
     try {
-      if (firebaseConfig.apiKey !== "AIzaSyAox4DjkW8QxeELAU9ixO3ogFkqM5RuPGU") {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-      }
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
     } catch (e) {
-      console.warn("Firebase 未設定專屬金鑰，運作於預設模式", e);
+      console.warn("Firebase 初始化異常", e);
     }
 
     window.firebaseEngine = {
@@ -639,33 +637,9 @@
 
       if (success) {
         updateLastEditBadge();
-        alert('✅ Firebase 雲端同步存檔成功！\n所有人開啟 GitHub Pages 網址時均會即時同步！');
+        alert('✅ 雲端同步存檔成功！\n現在其他人不論在哪台設備開啟網頁，均會顯示您剛存檔的最新內容！');
       } else {
-        alert('⚠️ 請先於代碼中填入您申請到的免費 Firebase 金鑰以啟用全設備同步！');
-      }
-    }
-
-    // 存檔按鍵專屬處理：純雲端上傳
-    async function manualSaveToCloud() {
-      const icon = document.getElementById('saveBtnIcon');
-      if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
-
-      const now = new Date();
-      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-      lastEditInfo = {
-        time: formattedTime,
-        editor: lastEditInfo.editor || '同行夥伴'
-      };
-
-      const success = await window.cloudEngine.saveData(locations, itineraryData, lastEditInfo);
-
-      if (icon) icon.className = 'fa-solid fa-cloud-arrow-up';
-
-      if (success) {
-        updateLastEditBadge();
-        alert('✅ 雲端同步存檔成功！\n現在其他成員不論在哪台設備開啟網頁，均會顯示您剛存檔的最新內容！');
-      } else {
-        alert('❌ 雲端傳輸失敗，請確認網路連線是否正常後再試一次！');
+        alert('❌ 雲端傳輸失敗，請確認 Firebase 資料庫權限設定（建議開啟 Test Mode 測試模式）！');
       }
     }
 
@@ -727,46 +701,8 @@
       const icon = document.getElementById('refreshBtnIcon');
       if (icon) icon.classList.add('fa-spin');
       
-      await fetchCloudData();
-
       setTimeout(() => {
         if (icon) icon.classList.remove('fa-spin');
-      }, 500);
-    }
-
-    async function manualSaveToCloud() {
-      const icon = document.getElementById('saveBtnIcon');
-      if (icon) {
-        icon.className = 'fa-solid fa-spinner fa-spin';
-      }
-
-      const now = new Date();
-      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-      lastEditInfo = {
-        time: formattedTime,
-        editor: lastEditInfo.editor || '同行夥伴'
-      };
-
-      // 優先寫入本地快取
-      saveLocationsToStorage();
-      saveItineraryToStorage();
-      localStorage.setItem('jeju_last_edit', JSON.stringify(lastEditInfo));
-      updateLastEditBadge();
-
-      let success = false;
-      if (window.cloudEngine) {
-        success = await window.cloudEngine.saveData(locations, itineraryData, lastEditInfo);
-      }
-
-      setTimeout(() => {
-        if (icon) {
-          icon.className = 'fa-solid fa-cloud-arrow-up';
-        }
-        if (success) {
-          alert('✅ 已成功將最新行程同步存入全域雲端！\n現在其他人（晃、快、天）不論用什麼手機或電腦打開網址，都會顯示這份最新檔案！');
-        } else {
-          alert('⚠️ 雲端連線稍微延遲，但資料已暫存於本機。請確認網路狀況後再試一次！');
-        }
       }, 500);
     }
 

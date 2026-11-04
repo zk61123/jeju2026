@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>濟州島冬日自由行 - 行程與地圖指南</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+    .watercolor-bg {
+      background: linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 50%, #fef3c7 100%);
+    }
+
+    /* 動態字型大小與行高/間距適配樣式 */
+    body.font-size-sm { 
+      font-size: 18px; 
+      line-height: 1.6; 
+    }
+    body.font-size-md { 
+      font-size: 21px; 
+      line-height: 1.65; 
+    }
+    body.font-size-lg { 
+      font-size: 24px; 
+      line-height: 1.7; 
+    }
+    body.font-size-xl { 
+      font-size: 27px; 
+      line-height: 1.75; 
+    }
+
+    body.font-size-sm h3 { font-size: 1.05rem; line-height: 1.4; }
+    body.font-size-md h3 { font-size: 1.2rem; line-height: 1.45; }
+    body.font-size-lg h3 { font-size: 1.35rem; line-height: 1.5; }
+    body.font-size-xl h3 { font-size: 1.5rem; line-height: 1.55; }
+
+    body.font-size-sm .text-xs { font-size: 0.9rem; line-height: 1.5; }
+    body.font-size-md .text-xs { font-size: 1.02rem; line-height: 1.55; }
+    body.font-size-lg .text-xs { font-size: 1.15rem; line-height: 1.6; }
+    body.font-size-xl .text-xs { font-size: 1.28rem; line-height: 1.65; }
+
+    body.font-size-sm .text-\[11px\] { font-size: 0.825rem; line-height: 1.45; }
+    body.font-size-md .text-\[11px\] { font-size: 0.95rem; line-height: 1.5; }
+    body.font-size-lg .text-\[11px\] { font-size: 1.08rem; line-height: 1.55; }
+    body.font-size-xl .text-\[11px\] { font-size: 1.2rem; line-height: 1.6; }
+
+    /* 大字體模式下的彈性卡片間隔與內邊距自動放寬 */
+    body.font-size-lg .line-clamp-2,
+    body.font-size-xl .line-clamp-2 {
+      -webkit-line-clamp: 4;
+    }
+
+    body.font-size-lg .p-4, body.font-size-xl .p-4 {
+      padding: 1.25rem !important;
+    }
+
+    body.font-size-lg input, body.font-size-xl input,
+    body.font-size-lg select, body.font-size-xl select,
+    body.font-size-lg button, body.font-size-xl button {
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+    }
+
+    /* 自動設備適配樣式：手機模式優化 */
+    body.is-mobile-device {
+      padding-bottom: 3.5rem;
+    }
+    body.is-mobile-device #spotsGrid {
+      grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+    body.is-mobile-device .mobile-compact-padding {
+      padding: 0.75rem !important;
+    }
+    body.is-mobile-device .mobile-touch-target {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+  </style>
+
+  <!-- Firebase 9/11 SDK 官方原生 SDK 即時同步引擎 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 💡 專屬 Firebase 專案金鑰 (jeju2026-b843e)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAox4DjkW8QxeELAU9ixO3ogFkqM5RuPGU",
+      authDomain: "jeju2026-b843e.firebaseapp.com",
+      projectId: "jeju2026-b843e",
+      storageBucket: "jeju2026-b843e.firebasestorage.app",
+      messagingSenderId: "299140457945",
+      appId: "1:299140457945:web:630d5420d1d02776a6e5c8"
+    };
+
+    // 初始化 Firebase
+    let db = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    } catch (e) {
+      console.warn("Firebase 初始化異常", e);
+    }
+
+    window.firebaseEngine = {
+      // 1. 監聽 Firestore 即時推送
+      listenCloud(callback) {
+        if (!db) return;
+        const docRef = doc(db, "trips", "jeju2026_master");
+        onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            callback(docSnap.data());
+          }
+        }, (err) => console.error("Firebase 監聽錯誤:", err));
+      },
+
+      // 2. 存檔至 Firebase
+      async saveData(locations, itineraryData, lastEditInfo) {
+        if (!db) return false;
+        try {
+          const docRef = doc(db, "trips", "jeju2026_master");
+          await setDoc(docRef, {
+            locations,
+            itineraryData,
+            lastEditInfo,
+            updatedAt: Date.now()
+          });
+          return true;
+        } catch (err) {
+          console.error("Firebase 寫入失敗:", err);
+          return false;
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-12 font-size-sm">
+
+  <!-- Header Section -->
+  <header class="watercolor-bg border-b border-sky-100 shadow-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">❄️</span>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">濟州島冬日自由行 ❄️ 🍊 🌺</h1>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">2026/12/11 - 12/16 ｜ 4人自駕遊（TPE 1人 / KHH 3人）</p>
+        </div>
+        
+        <!-- Quick Info Pills & Font Size Controller -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <!-- 字型大小控制切換器 -->
+          <div class="bg-white/80 backdrop-blur border border-slate-200/80 rounded-full p-0.5 flex items-center shadow-2xs">
+            <span class="text-[11px] text-slate-500 pl-2 pr-1 font-medium">字型:</span>
+            <button onclick="setFontSize('sm')" id="fontBtn-sm" class="px-2 py-0.5 rounded-full text-[11px] font-bold transition bg-slate-800 text-white shadow-2xs">小</button>
+            <button onclick="setFontSize('md')" id="fontBtn-md" class="px-2 py-0.5 rounded-full text-[11px] font-medium transition text-slate-600 hover:text-slate-900">中</button>
+            <button onclick="setFontSize('lg')" id="fontBtn-lg" class="px-2 py-0.5 rounded-full text-[11px] font-medium transition text-slate-600 hover:text-slate-900">大</button>
+            <button onclick="setFontSize('xl')" id="fontBtn-xl" class="px-2 py-0.5 rounded-full text-[11px] font-medium transition text-slate-600 hover:text-slate-900">特大</button>
+          </div>
+
+          <a href="https://naver.me/GvcTX6cP" target="_blank" id="hotelHeaderLink" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-full font-medium transition flex items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-hotel text-amber-600"></i>
+            <span>글로스터호텔 (Gloucester)</span>
+          </a>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full font-medium flex items-center gap-1">
+            <i class="fa-solid fa-car text-blue-600"></i>
+            <span>Seltos 2WD (Lotte Rent)</span>
+          </span>
+          
+          <!-- Last Edit Info Badge with Manual Refresh & Save Buttons -->
+          <div class="bg-slate-800 text-slate-100 px-3 py-1.5 rounded-full font-mono text-[11px] flex items-center gap-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+              <span id="lastEditBadge">最後編輯: 雲端同步中...</span>
+            </div>
+            
+            <!-- Manual Refresh Button -->
+            <button onclick="manualRefreshData()" title="手動抓取雲端最新資料" class="bg-slate-700 hover:bg-slate-600 text-amber-300 hover:text-white px-2 py-0.5 rounded-full transition flex items-center gap-1 border border-slate-600 text-[10px]">
+              <i class="fa-solid fa-rotate" id="refreshBtnIcon"></i>
+              <span>手動更新</span>
+            </button>
+
+            <!-- Save to Cloud Button -->
+            <button onclick="manualSaveToCloud()" title="將目前變更回存至雲端檔案" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2 py-0.5 rounded-full transition flex items-center gap-1 shadow-2xs text-[10px]">
+              <i class="fa-solid fa-cloud-arrow-up" id="saveBtnIcon"></i>
+              <span>存檔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Flight & Vehicle Logistics Card + Itinerary Planner -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- Logistics Info Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+        <h2 class="text-base font-bold text-slate-800 flex items-center justify-between">
+          <span><i class="fa-solid fa-plane-arrival text-sky-500 mr-2"></i>航班與分工資訊</span>
+          <span class="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full">4人同行</span>
+        </h2>
+        
+        <div class="space-y-3 text-xs text-slate-600">
+          <!-- TPE Flight -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="font-bold text-slate-700 mb-1 flex items-center justify-between">
+              <span>✈️ 台北桃園 (TPE) 出發 (1人)</span>
+              <span class="text-emerald-600 font-normal">早班抵達</span>
+            </div>
+            <p>去程: ZE886 | 12/11 03:05 ➔ 06:05 CJU</p>
+            <p>回程: IT655 | 12/16 10:10 ➔ 11:25 TPE</p>
+            <div class="mt-1.5 text-emerald-700 bg-emerald-50 p-1.5 rounded text-[11px]">
+              💡 率先於 08:00 前往 Jeju AutoHouse 取車
+            </div>
+          </div>
+
+          <!-- KHH Flight -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="font-bold text-slate-700 mb-1 flex items-center justify-between">
+              <span>✈️ 高雄 (KHH) 出發 (3人)</span>
+              <span class="text-sky-600 font-normal">晚班抵達</span>
+            </div>
+            <p>去程: IT670 | 12/11 16:00 ➔ 19:30 CJU</p>
+            <p>回程: IT671 | 12/16 20:20 ➔ 22:00 KHH</p>
+            <div class="mt-1.5 text-sky-700 bg-sky-50 p-1.5 rounded text-[11px]">
+              🚗 TPE 夥伴開車至機場接機，12/16 17:00 還車
+            </div>
+          </div>
+
+          <!-- Parking Note -->
+          <div class="p-3 bg-amber-50 text-amber-900 rounded-xl border border-amber-100 text-[11px] space-y-1.5">
+            <div class="font-bold flex items-center justify-between border-b border-amber-200/60 pb-1">
+              <span class="flex items-center gap-1">
+                <i class="fa-solid fa-square-parking text-amber-700"></i> 飯店停車與備用停車場（綜合考量推薦）
+              </span>
+              <span class="text-[10px] bg-amber-200/70 text-amber-900 px-1.5 py-0.5 rounded">蓮洞周邊</span>
+            </div>
+            
+            <div class="space-y-1 pt-0.5">
+              <div class="flex items-center justify-between">
+                <p class="font-semibold text-amber-950">1. 首選：飯店專用地下停車場 (B3)</p>
+                <a href="https://naver.me/GvcTX6cP" target="_blank" class="text-[10px] text-sky-700 underline font-medium hover:text-sky-900">
+                  <i class="fa-solid fa-location-arrow"></i> Naver Map
+                </a>
+              </div>
+              <p class="text-slate-600 pl-2">• <b>費用：</b>房客免費停放（CP值最高）</p>
+              <p class="text-slate-600 pl-2">• <b>距離：</b>0 公尺（直達飯店）</p>
+              <p class="text-slate-600 pl-2">• <b>說明：</b>若遇晚餐尖峰時間滿位再考慮備用停車場。</p>
+            </div>
+
+            <div class="space-y-1 pt-1.5 border-t border-amber-200/40">
+              <div class="flex items-center justify-between">
+                <p class="font-semibold text-amber-950">2. 備用首選：新濟州公營停車場 (신제주 공영주차장)</p>
+                <a href="https://naver.me/xX0Z7XlA" target="_blank" class="text-[10px] text-sky-700 underline font-medium hover:text-sky-900">
+                  <i class="fa-solid fa-location-arrow"></i> Naver Map
+                </a>
+              </div>
+              <p class="text-slate-600 pl-2">• <b>距離：</b>約 350m（步行 4~5 分鐘）</p>
+              <p class="text-slate-600 pl-2">• <b>費用：</b>前 30 分鐘免費，每 15 分 500 韓元；<b>夜間 (22:00-09:00) 及例假日免費</b></p>
+              <p class="text-slate-600 pl-2">• <b>地址：</b>제주 제주시 신대로12길 52</p>
+            </div>
+
+            <div class="space-y-1 pt-1.5 border-t border-amber-200/40">
+              <div class="flex items-center justify-between">
+                <p class="font-semibold text-amber-950">3. 平價近距：蓮洞立體公營停車場 (연동 공영주차장)</p>
+                <a href="https://naver.me/54V4XqD8" target="_blank" class="text-[10px] text-sky-700 underline font-medium hover:text-sky-900">
+                  <i class="fa-solid fa-location-arrow"></i> Naver Map
+                </a>
+              </div>
+              <p class="text-slate-600 pl-2">• <b>距離：</b>約 280m（步行 3~4 分鐘）</p>
+              <p class="text-slate-600 pl-2">• <b>費用：</b>公營費率（夜間/假日部分時段免收費），車位較多</p>
+              <p class="text-slate-600 pl-2">• <b>地址：</b>제주 제주시 연동 273-1</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-Day Itinerary Planner -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-days text-orange-500"></i>
+            <span>預排行程規劃 (6天)</span>
+          </h2>
+        </div>
+
+        <!-- Days Accordion/List -->
+        <div id="itineraryDaysContainer" class="space-y-3">
+          <!-- Dynamic Days Rendered Here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Interactive Map & Spots Explorer -->
+    <div class="lg:col-span-8 space-y-6">
+      
+      <!-- Filter Bar -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          
+          <!-- Search input & Add Spot Button -->
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <div class="relative w-full sm:w-64">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="搜尋景點、店名或關鍵字..." 
+                class="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            </div>
+
+            <!-- Add New Spot Button -->
+            <button onclick="openAddSpotModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1.5 shrink-0 shadow-sm">
+              <i class="fa-solid fa-plus"></i>
+              <span>新增景點</span>
+            </button>
+          </div>
+
+          <!-- Quadrant Region Selector -->
+          <div class="flex flex-wrap gap-1.5 w-full sm:w-auto" id="regionFilters">
+            <!-- Dynamic Quadrant Filter Buttons -->
+          </div>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100" id="categoryFilters">
+          <!-- Dynamic Category Pills -->
+        </div>
+      </div>
+
+      <!-- Spots List Grid -->
+      <div id="spotsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Dynamic Spot Cards Rendered Here -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Route Visualizer Modal -->
+  <div id="routeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-xl space-y-4 relative max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="routeModalTitle" class="text-base font-bold text-slate-800 flex items-center gap-2">
+          🗺️ 車程動線與路線圖
+        </h3>
+        <button onclick="closeRouteModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Water-color Route Map Canvas -->
+      <div class="relative w-full h-56 bg-sky-50 rounded-xl overflow-hidden border border-slate-200">
+        <canvas id="routeCanvas" class="w-full h-full"></canvas>
+      </div>
+
+      <!-- Distance Summary & Leg-by-leg details -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <span>🚗 路線車程預估</span>
+          <span id="routeSummaryText" class="text-sky-600">計算中...</span>
+        </div>
+
+        <div id="routeLegsContainer" class="space-y-1.5 text-xs text-slate-600 max-h-40 overflow-y-auto pr-1">
+          <!-- Dynamic route legs -->
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 text-xs pt-2 border-t border-slate-100">
+        <button onclick="closeRouteModal()" class="px-4 py-2 rounded-xl text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Itinerary Item Modal (Time & Note) -->
+  <div id="editItineraryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-4 relative">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-clock text-sky-500"></i> 編輯行程細節
+      </h3>
+      <input type="hidden" id="editItineraryDay">
+      <input type="hidden" id="editItineraryIndex">
+      
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">預計抵達時間 / 時間區段</label>
+        <input type="text" id="editItineraryTime" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none" placeholder="例如：09:30 AM 或 午餐時段">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">當日專屬備註</label>
+        <textarea id="editItineraryNote" rows="3" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none" placeholder="輸入當日注意事項（如：需先取號、訂位代碼等）"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeItineraryModal()" class="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">取消</button>
+        <button onclick="saveItineraryEdit()" class="px-3 py-1.5 text-xs bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg shadow-sm">儲存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Spot Notes Modal (包含名稱修改) -->
+  <div id="editSpotModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4 relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-sky-500"></i> 編輯景點資料與備註
+      </h3>
+      <input type="hidden" id="editSpotId">
+      
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">編輯人員 *</label>
+        <select id="editSpotEditor" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none">
+          <option value="系統預設">系統預設</option>
+          <option value="晃">晃</option>
+          <option value="快">快</option>
+          <option value="天">天</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">中文名稱 *</label>
+          <input type="text" id="editSpotName" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">韓文名稱 *</label>
+          <input type="text" id="editSpotKrName" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none">
+        </div>
+      </div>
+
+      <!-- Category Selector in Edit Modal -->
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">景點類別 *</label>
+          <select id="editSpotCategory" onchange="handleCategorySelectChange('edit')" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none">
+            <option value="food">美食 🍽️</option>
+            <option value="cafe">咖啡 ☕</option>
+            <option value="bakery">烘焙 🥐</option>
+            <option value="citrus">柑橘 🍊</option>
+            <option value="winter">冬雪/山茶花 ❄️</option>
+            <option value="attraction">景點 🎡</option>
+            <option value="shopping">選物 🛍️</option>
+            <option value="hotel">住宿 🏨</option>
+            <option value="__NEW_CAT__">➕ 自訂新增分類...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">圖示/Emoji</label>
+          <input type="text" id="editSpotIcon" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none" placeholder="例: 📍">
+        </div>
+      </div>
+
+      <!-- Emoji Picker Bar for Edit Modal -->
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-bold text-slate-600">快捷 Emoji 選擇區：</span>
+          <button onclick="autoSuggestEmoji('edit')" type="button" class="text-sky-600 hover:text-sky-800 font-medium">✨ 智慧推薦 Emoji</button>
+        </div>
+        <div class="flex flex-wrap gap-1.5 text-base">
+          <button type="button" onclick="selectEmoji('edit', '📍')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">📍</button>
+          <button type="button" onclick="selectEmoji('edit', '🍽️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍽️</button>
+          <button type="button" onclick="selectEmoji('edit', '🥩')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🥩</button>
+          <button type="button" onclick="selectEmoji('edit', '🍜')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍜</button>
+          <button type="button" onclick="selectEmoji('edit', '☕')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">☕</button>
+          <button type="button" onclick="selectEmoji('edit', '🥐')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🥐</button>
+          <button type="button" onclick="selectEmoji('edit', '🍊')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍊</button>
+          <button type="button" onclick="selectEmoji('edit', '❄️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">❄️</button>
+          <button type="button" onclick="selectEmoji('edit', '🌺')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🌺</button>
+          <button type="button" onclick="selectEmoji('edit', '🎡')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🎡</button>
+          <button type="button" onclick="selectEmoji('edit', '🛍️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🛍️</button>
+          <button type="button" onclick="selectEmoji('edit', '🏨')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🏨</button>
+          <button type="button" onclick="selectEmoji('edit', '🚗')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🚗</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">自訂備註</label>
+        <textarea id="editSpotNote" rows="3" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none" placeholder="輸入備註（如：推薦吃海鮮湯、備用景點等）"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">NAVER 地圖連結</label>
+        <input type="text" id="editSpotUrl" class="w-full text-xs p-2.5 border rounded-xl border-slate-200 focus:ring-2 focus:ring-sky-400 focus:outline-none">
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button onclick="deleteCurrentSpot()" type="button" class="px-3 py-1.5 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium rounded-lg transition flex items-center gap-1">
+          <i class="fa-solid fa-trash-can"></i> 刪除景點
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeEditModal()" type="button" class="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">取消</button>
+          <button onclick="saveSpotEdit()" type="button" class="px-3 py-1.5 text-xs bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg shadow-sm">儲存修改</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add New Spot Modal -->
+  <div id="addSpotModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-3.5 relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-location-dot text-emerald-600"></i> 新增景點或餐廳
+      </h3>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">編輯人員 *</label>
+        <select id="addSpotEditor" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="系統預設">系統預設</option>
+          <option value="晃">晃</option>
+          <option value="快">快</option>
+          <option value="天">天</option>
+        </select>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">中文名稱 *</label>
+          <input type="text" id="addSpotName" oninput="autoSuggestEmoji('add')" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="例：濟州海景湯麵">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">韓文名稱 *</label>
+          <input type="text" id="addSpotKrName" oninput="autoSuggestEmoji('add')" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="例：제주해물국수">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">類別 *</label>
+          <select id="addSpotCategory" onchange="handleCategorySelectChange('add')" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+            <option value="food">美食 🍽️</option>
+            <option value="cafe">咖啡 ☕</option>
+            <option value="bakery">烘焙 🥐</option>
+            <option value="citrus">柑橘 🍊</option>
+            <option value="winter">冬雪/山茶花 ❄️</option>
+            <option value="attraction">景點 🎡</option>
+            <option value="shopping">選物 🛍️</option>
+            <option value="hotel">住宿 🏨</option>
+            <option value="__NEW_CAT__">➕ 自訂新增分類...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">象限區域 *</label>
+          <select id="addSpotRegion" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+            <option value="NW">西北 (機場/涯月)</option>
+            <option value="NE">東北 (咸德/舊左)</option>
+            <option value="SW">西南 (安德/大靜)</option>
+            <option value="SE">東南 (西歸浦/聖山)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">圖示/Emoji</label>
+          <input type="text" id="addSpotIcon" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="例: 🍜" value="📍">
+        </div>
+      </div>
+
+      <!-- Emoji Picker & Auto-Suggest Bar -->
+      <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-bold text-slate-600">快捷 Emoji 選擇區：</span>
+          <button onclick="autoSuggestEmoji('add')" type="button" class="text-sky-600 hover:text-sky-800 font-medium">✨ 智慧推薦 Emoji</button>
+        </div>
+        <div class="flex flex-wrap gap-1.5 text-base">
+          <button type="button" onclick="selectEmoji('add', '📍')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">📍</button>
+          <button type="button" onclick="selectEmoji('add', '🍽️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍽️</button>
+          <button type="button" onclick="selectEmoji('add', '🥩')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🥩</button>
+          <button type="button" onclick="selectEmoji('add', '🍜')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍜</button>
+          <button type="button" onclick="selectEmoji('add', '☕')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">☕</button>
+          <button type="button" onclick="selectEmoji('add', '🥐')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🥐</button>
+          <button type="button" onclick="selectEmoji('add', '🍊')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🍊</button>
+          <button type="button" onclick="selectEmoji('add', '❄️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">❄️</button>
+          <button type="button" onclick="selectEmoji('add', '🌺')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🌺</button>
+          <button type="button" onclick="selectEmoji('add', '🎡')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🎡</button>
+          <button type="button" onclick="selectEmoji('add', '🛍️')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🛍️</button>
+          <button type="button" onclick="selectEmoji('add', '🏨')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🏨</button>
+          <button type="button" onclick="selectEmoji('add', '🚗')" class="p-1 bg-white hover:bg-slate-200 rounded border border-slate-200">🚗</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">NAVER 地圖網址</label>
+        <input type="text" id="addSpotUrl" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="https://naver.me/...">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">備註/特色</label>
+        <textarea id="addSpotNote" rows="2" class="w-full text-xs p-2 border rounded-xl border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="特色、營業時間或必點菜色..."></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeAddSpotModal()" class="px-3 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">取消</button>
+        <button onclick="saveNewSpot()" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm">確認新增</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initial Spot Database
+    const defaultLocations = [
+      { id: 'gloucester', name: '濟州格洛斯特飯店', krName: '글로스터호텔 제주', category: 'hotel', region: 'NW', url: 'https://naver.me/GvcTX6cP', note: '蓮洞住宿，B3免費停車，備用新濟州公營停車場', icon: '🏨', coords: { x: 38, y: 32 } },
+      { id: 'london_bagel', name: '倫敦貝果博物館 濟州', krName: '런던베이글뮤지엄 제주', category: 'bakery', region: 'NE', url: 'https://naver.me/GuCa7IS7', note: '舊左東福里人氣貝果店', icon: '🥐', coords: { x: 62, y: 30 } },
+      { id: 'object_jeju', name: '可愛橘子娃石頭娃選物店', krName: '오브젝트 제주점', category: 'shopping', region: 'NE', url: 'https://naver.me/FCZlTKjx', note: '貝果店附近精品選物店', icon: '🛍️', coords: { x: 64, y: 31 } },
+      { id: 'delmundo_gimnyeong', name: '看海咖啡廳 德爾蒙多', krName: '델문도 김녕점', category: 'cafe', region: 'NE', url: 'https://naver.me/xaTUgVOH', note: '金寧海邊絕美海景咖啡', icon: '☕', coords: { x: 68, y: 26 } },
+      { id: 'wolgojib', name: '網友推薦烤肉店 (月固家)', krName: '월고집 구좌 월정리 본점', category: 'food', region: 'NE', url: 'https://naver.me/xWIVwnfm', note: '月汀里優質黑豬肉烤肉', icon: '🍽️', coords: { x: 72, y: 32 } },
+      { id: 'baekguok', name: '海膽＆炸豬排店 (白鷗屋)', krName: '백구옥', category: 'food', region: 'NE', url: 'https://naver.me/xAfdyKDN', note: '舊左海岸路海膽飯與豬排', icon: '🍽️', coords: { x: 78, y: 28 } },
+      { id: 'cafe_ri', name: '貓咪咖啡廳 Cafe Ri', krName: '카페리 구좌', category: 'cafe', region: 'NE', url: 'https://naver.me/FNtwIlyJ', note: '坪代里溫馨貓咪咖啡廳', icon: '☕', coords: { x: 75, y: 35 } },
+      { id: 'myeongjin', name: '明進鮑魚', krName: '명진전복', category: 'food', region: 'NE', url: 'https://naver.me/5WUARWFV', note: '濟州必吃熱門鮑魚石鍋飯', icon: '🍽️', coords: { x: 79, y: 31 } },
+      { id: 'jejugil_blackpork', name: '泰亨朴敘俊同款黑豬肉店', krName: '제주길흑돼지참숯구이', category: 'food', region: 'SE', url: 'https://naver.me/FNtKScDz', note: '城山邑明星同款炭火黑豬肉', icon: '🍽️', coords: { x: 82, y: 58 } },
+      { id: 'olive_hamdeok', name: '咸德海灘 Olive Young', krName: '올리브영 제주함덕점', category: 'shopping', region: 'NE', url: 'https://naver.me/G8frjVFR', note: '咸德海邊美妝店（濟州限定）', icon: '🛍️', coords: { x: 58, y: 28 } },
+      { id: 'sehwa_galbi', name: '細花排骨 直營店', krName: '세화갈비 함덕직영점', category: 'food', region: 'NE', url: 'https://naver.me/GdT2RMZc', note: '咸德超讚燉牛排骨', icon: '🍽️', coords: { x: 57, y: 29 } },
+      { id: 'audant_bakery', name: '大蒜麵包本店 (Audant)', krName: '오드랑베이커리 함덕점', category: 'bakery', region: 'NE', url: 'https://naver.me/FjmD9rvr', note: '咸德海邊招牌大蒜奶油麵包', icon: '🥐', coords: { x: 59, y: 28 } },
+      { id: 'audant_sinchon', name: '大蒜麵包分店 (新村店)', krName: '오드랑베이커리 앤 카페 신촌점', category: 'bakery', region: 'NE', url: 'https://naver.me/FaecrQZR', note: '朝天邑分店，較不擁擠', icon: '🥐', coords: { x: 52, y: 29 } },
+      { id: 'jakjedo', name: '木柴烤肉+橘子園', krName: '작제도 흑돼지 장작구이', category: 'food', region: 'NW', url: 'https://naver.me/Gjy1iXGx', note: '延北路木柴烤黑豬肉與果園', icon: '🍊', coords: { x: 42, y: 34 } },
+      { id: 'dodu_rainbow', name: '海岸彩虹道路', krName: '도두동무지개해안도로', category: 'attraction', region: 'NW', url: 'https://naver.me/5CCLhtck', note: '道頭洞經典彩虹石墩打卡點', icon: '🎡', coords: { x: 35, y: 24 } },
+      { id: 'dodu_parking', name: '彩虹道路停車場', krName: '도두봉 주차장', category: 'attraction', region: 'NW', url: 'https://naver.me/xIFBwBvZ', note: '彩虹道路與道頭峰免費停車', icon: '🚗', coords: { x: 34, y: 24 } },
+      { id: 'samseonghyeol', name: '三姓穴海鮮鍋 1號店', krName: '원조 삼성혈해물탕 1호점', category: 'food', region: 'NW', url: 'https://naver.me/G1pz6z8W', note: '道頭港豐富澎湃海鮮鍋', icon: '🍽️', coords: { x: 36, y: 26 } },
+      { id: 'hello_abalone', name: '你好鮑魚 濟州機場本店', krName: '안녕전복 제주공항본점', category: 'food', region: 'NW', url: 'https://naver.me/5AuKDHT3', note: '機場附近美味鮑魚料理', icon: '🍽️', coords: { x: 37, y: 28 } },
+      { id: 'undukjib', name: '海景豬肉湯麵店', krName: '언덕집국수', category: 'food', region: 'NW', url: 'https://naver.me/xNp8z6bU', note: '涯月海岸道路海景豬肉湯麵', icon: '🍽️', coords: { x: 24, y: 30 } },
+      { id: 'jeju_whale', name: '涯月海邊濟州小物店', krName: '제주고래 감성소품', category: 'shopping', region: 'NW', url: 'https://naver.me/FVFkLOU2', note: '涯月海岸2層精緻紀念品店', icon: '🛍️', coords: { x: 23, y: 31 } },
+      { id: 'haejigae', name: '涯月海邊咖啡廳 Haejigae', krName: '해지개', category: 'cafe', region: 'NW', url: 'https://naver.me/GWW0uDjE', note: '涯月海景韓屋風格海景咖啡', icon: '☕', coords: { x: 20, y: 34 } },
+      { id: 'haejigae_black', name: '해지개 더 블랙', krName: '해지개더블랙', category: 'cafe', region: 'NW', url: 'https://naver.me/x52Z5H8p', note: 'Haejigae 質感黑系分店', icon: '☕', coords: { x: 20, y: 35 } },
+      { id: 'gyulgyul_aewol', name: '米菲兔+玩偶周邊 (귤귤스토어)', krName: '귤귤스토어 애월점', category: 'shopping', region: 'NW', url: 'https://naver.me/5WU5eo2O', note: '涯月超可愛柑橘周邊與米菲', icon: '🛍️', coords: { x: 19, y: 36 } },
+      { id: 'flowave', name: '落火表演咖啡廳 Flowave', krName: '플로웨이브', category: 'cafe', region: 'NW', url: 'https://naver.me/xPYbSdJM', note: '翰林邑晚上落火演出熱門地點', icon: '❄️', coords: { x: 15, y: 44 } },
+      { id: 'galchido', name: '白帶魚餐廳 挾才本店', krName: '제주갈치도 협재 본점', category: 'food', region: 'NW', url: 'https://naver.me/xEXv044Q', note: '翰林挾才優質烤/煮白帶魚', icon: '🍽️', coords: { x: 14, y: 46 } },
+      { id: '1100_goji', name: '1100高地休息站 (賞雪勝地)', krName: '1100고지습지', category: 'winter', region: 'SE', url: 'https://naver.me/50BscHP2', note: '漢拏山冬日雪景與霧凇首選', icon: '❄️', coords: { x: 48, y: 52 } },
+      { id: 'olle_market', name: '西歸浦偶來市場', krName: '서귀포매일올레시장', category: 'attraction', region: 'SE', url: 'https://naver.me/5PW1EbSS', note: '西歸浦熱鬧傳統美食市場', icon: '🎡', coords: { x: 50, y: 76 } },
+      { id: 'jeju_ain', name: '橘子咖啡廳 (제주에인감귤밭)', krName: '서귀포 제주에인감귤밭 카페', category: 'citrus', region: 'SE', url: 'https://naver.me/FvTsoDed', note: '西歸浦可愛柑橘採摘與咖啡', icon: '🍊', coords: { x: 46, y: 74 } },
+      { id: 'gamttanam', name: '橘子咖啡廳 Gamttanam', krName: '감따남', category: 'citrus', region: 'SE', url: 'https://naver.me/GZDRoMP6', note: '西歸浦復古感採柑橘咖啡', icon: '🍊', coords: { x: 42, y: 73 } },
+      { id: 'hello_kitty', name: 'Hello Kitty 博物館', krName: '헬로키티아일랜드', category: 'attraction', region: 'SW', url: 'https://naver.me/G5kFxjDU', note: '安德面 Hello Kitty 主題館', icon: '🎡', coords: { x: 28, y: 64 } },
+      { id: 'camellia_hill', name: '山茶花之丘 (Camellia Hill)', krName: '카멜리아힐', category: 'winter', region: 'SW', url: 'https://naver.me/GArEgh3a', note: '冬日盛開赤紅山茶花公園', icon: '🌺', coords: { x: 26, y: 67 } },
+      { id: 'chunsim', name: '白帶魚名店 춘심이네 本店', krName: '춘심이네 본점', category: 'food', region: 'SW', url: 'https://naver.me/xRgbyxwr', note: '安德面超大整條白帶魚美食', icon: '🍽️', coords: { x: 25, y: 72 } },
+      { id: 'hoeyang', name: '山房山海鮮鍋 (회양과국수군)', krName: '회양과국수군 제주산방산점', category: 'food', region: 'SW', url: 'https://naver.me/GahUFzxe', note: '山房山海岸海鮮鍋與海鮮麵', icon: '🍽️', coords: { x: 21, y: 78 } },
+      { id: 'lupin', name: '海景咖啡廳 Lupin', krName: '루핀', category: 'cafe', region: 'SW', url: 'https://naver.me/5PWBG7I2', note: '大靜邑兄弟海岸路愜意咖啡', icon: '☕', coords: { x: 16, y: 79 } },
+      { id: 'osulloc', name: 'OSULLOC 雪綠茶博物館', krName: '오설록 티 뮤지엄', category: 'attraction', region: 'SW', url: 'https://naver.me/FJOyp7Ey', note: '綠茶園與精緻抹茶甜點', icon: '🎡', coords: { x: 21, y: 62 } },
+      { id: 'innisfree', name: 'Innisfree JEJU HOUSE', krName: '이니스프리 제주하우스', category: 'shopping', region: 'SW', url: 'https://naver.me/x0OZpevn', note: '雪綠茶旁自然美妝體驗', icon: '🛍️', coords: { x: 22, y: 62 } },
+      { id: 'seohong', name: '西烘庭園 (서홍정원)', krName: '서홍정원', category: 'cafe', region: 'SE', url: 'https://naver.me/Fiox8aYs', note: '西歸浦綠意庭園景觀咖啡', icon: '☕', coords: { x: 48, y: 72 } },
+      { id: 'seungppeumdang', name: 'Seungppeumdang (승쁨당)', krName: '승쁨당', category: 'bakery', region: 'NE', url: 'https://naver.me/FQVX5mcF', note: '濟州市一徒二洞麵包店', icon: '🥐', coords: { x: 44, y: 31 } },
+      { id: 'jeju_wana', name: 'Jeju Wana (제주와나)', krName: '제주와나', category: 'cafe', region: 'NE', url: 'https://naver.me/GKUgz1J0', note: '濟州市三姓路溫馨質感咖啡', icon: '☕', coords: { x: 43, y: 30 } }
+    ];
+
+    let locations = [...defaultLocations];
+    let customCategories = [];
+    let activeCategory = 'ALL';
+    let activeRegion = 'ALL';
+    let searchQuery = '';
+    let currentFontSize = 'md';
+    let lastEditInfo = { time: '2026/11/04 22:10', editor: '系統預設' };
+
+    let itineraryDates = [
+      { day: 1, date: '12/11 (五)', label: '第一天：抵達與市區' },
+      { day: 2, date: '12/12 (六)', label: '第二天：東海岸與舊左' },
+      { day: 3, date: '12/13 (日)', label: '第三天：西南與賞雪' },
+      { day: 4, date: '12/14 (一)', label: '第四天：西歸浦與山茶花' },
+      { day: 5, date: '12/15 (二)', label: '第五天：涯月海岸路' },
+      { day: 6, date: '12/16 (三)', label: '第六天：採買與歸途' }
+    ];
+
+    let itineraryData = {
+      1: [],
+      2: [
+        { spotId: 'gloucester', time: '08:30', customNote: '飯店出發（車程約 35 分鐘）' },
+        { spotId: 'audant_sinchon', time: '09:05 - 09:35', customNote: '大蒜麵包新村店，購買招牌大蒜奶油麵包' },
+        { spotId: 'london_bagel', time: '10:00 - 11:15', customNote: '倫敦貝果博物館 (已現場排隊/取號)' },
+        { spotId: 'object_jeju', time: '11:20 - 12:00', customNote: 'Object 選物店（購買柑橘/石頭娃周邊）' },
+        { spotId: 'delmundo_gimnyeong', time: '12:15 - 13:15', customNote: '德爾蒙多金寧店看海喝咖啡' },
+        { spotId: 'myeongjin', time: '13:35 - 14:45', customNote: '明進鮑魚，享用鮑魚石鍋飯與烤鮑魚午餐' },
+        { spotId: 'cafe_ri', time: '15:00 - 16:15', customNote: '坪代里 Cafe Ri 貓咪咖啡廳放鬆休息' },
+        { spotId: 'olive_hamdeok', time: '16:45 - 17:30', customNote: '咸德海灘 Olive Young 採買濟州限定美妝' },
+        { spotId: 'sehwa_galbi', time: '17:40 - 19:00', customNote: '細花排骨咸德直營店，享用澎湃燉牛排骨晚餐' },
+        { spotId: 'gloucester', time: '19:40', customNote: '返回格洛斯特飯店休息' }
+      ],
+      3: [],
+      4: [],
+      5: [],
+      6: []
+    };
+
+    window.onload = function() {
+      detectAndApplyDeviceLayout();
+      setFontSize(currentFontSize);
+      updateLastEditBadge();
+      renderCategoryFilters();
+      renderRegionQuadrantFilters();
+      renderItineraryPlanner();
+      applyFiltersAndRender();
+
+      // 啟動 Firebase 即時監聽引擎
+      if (window.firebaseEngine) {
+        window.firebaseEngine.listenCloud((data) => {
+          if (data && data.locations) {
+            locations = data.locations;
+            itineraryData = data.itineraryData || itineraryData;
+            lastEditInfo = data.lastEditInfo || lastEditInfo;
+
+            updateLastEditBadge();
+            renderItineraryPlanner();
+            applyFiltersAndRender();
+          }
+        });
+      }
+    };
+
+    async function manualSaveToCloud() {
+      const icon = document.getElementById('saveBtnIcon');
+      if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+
+      const now = new Date();
+      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      lastEditInfo = {
+        time: formattedTime,
+        editor: lastEditInfo.editor || '同行夥伴'
+      };
+
+      let success = false;
+      if (window.firebaseEngine) {
+        success = await window.firebaseEngine.saveData(locations, itineraryData, lastEditInfo);
+      }
+
+      if (icon) icon.className = 'fa-solid fa-cloud-arrow-up';
+
+      if (success) {
+        updateLastEditBadge();
+        alert('✅ 雲端同步存檔成功！\n現在其他人不論在哪台設備開啟網頁，均會顯示您剛存檔的最新內容！');
+      } else {
+        alert('❌ 雲端傳輸失敗，請確認 Firebase 資料庫權限設定！');
+      }
+    }
+
+    window.addEventListener('resize', detectAndApplyDeviceLayout);
+
+    function detectAndApplyDeviceLayout() {
+      const isMobileWidth = window.innerWidth < 768;
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = isMobileWidth || (isMobileUserAgent && window.innerWidth < 1024);
+
+      if (isMobile) {
+        document.body.classList.add('is-mobile-device');
+      } else {
+        document.body.classList.remove('is-mobile-device');
+      }
+    }
+
+    function setFontSize(size) {
+      currentFontSize = size;
+      document.body.classList.remove('font-size-sm', 'font-size-md', 'font-size-lg', 'font-size-xl');
+      document.body.classList.add(`font-size-${size}`);
+
+      ['sm', 'md', 'lg', 'xl'].forEach(s => {
+        const btn = document.getElementById(`fontBtn-${s}`);
+        if (btn) {
+          if (s === size) {
+            btn.className = "px-2 py-0.5 rounded-full text-[11px] font-bold transition bg-slate-800 text-white shadow-2xs";
+          } else {
+            btn.className = "px-2 py-0.5 rounded-full text-[11px] font-medium transition text-slate-600 hover:text-slate-900";
+          }
+        }
+      });
+    }
+
+    function updateLastEditInfo(editorName) {
+      const now = new Date();
+      const formattedTime = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      lastEditInfo = {
+        time: formattedTime,
+        editor: editorName || '系統預設'
+      };
+      updateLastEditBadge();
+    }
+
+    function updateLastEditBadge() {
+      const el = document.getElementById('lastEditBadge');
+      if (el) {
+        el.innerText = `最後編輯: ${lastEditInfo.time}`;
+      }
+    }
+
+    async function manualRefreshData() {
+      const icon = document.getElementById('refreshBtnIcon');
+      if (icon) icon.classList.add('fa-spin');
+      setTimeout(() => {
+        if (icon) icon.classList.remove('fa-spin');
+      }, 500);
+    }
+
+    function renderCategoryFilters() {
+      const categories = [
+        { id: 'ALL', label: '全部類別' },
+        { id: 'food', label: '美食 🍽️' },
+        { id: 'cafe', label: '咖啡 ☕' },
+        { id: 'bakery', label: '烘焙 🥐' },
+        { id: 'citrus', label: '柑橘 🍊' },
+        { id: 'winter', label: '冬日賞雪/山茶花 ❄️' },
+        { id: 'attraction', label: '景點 🎡' },
+        { id: 'shopping', label: '選物 🛍️' },
+        { id: 'hotel', label: '住宿 🏨' },
+        ...customCategories
+      ];
+
+      const container = document.getElementById('categoryFilters');
+      if (!container) return;
+      container.innerHTML = categories.map(c => `
+        <button onclick="setCategory('${c.id}')" class="px-3 py-1.5 text-xs rounded-xl transition font-medium ${activeCategory === c.id ? 'bg-sky-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}">
+          ${c.label}
+        </button>
+      `).join('');
+    }
+
+    function renderRegionQuadrantFilters() {
+      const regions = [
+        { id: 'ALL', label: '全濟州' },
+        { id: 'NE', label: '第一象限 (東北/咸德舊左)' },
+        { id: 'NW', label: '第二象限 (西北/機場涯月)' },
+        { id: 'SW', label: '第三象限 (西南/安德大靜)' },
+        { id: 'SE', label: '第四象限 (東南/西歸浦聖山)' }
+      ];
+
+      const container = document.getElementById('regionFilters');
+      if (!container) return;
+      container.innerHTML = regions.map(r => `
+        <button onclick="setRegion('${r.id}')" class="px-2.5 py-1 text-[11px] rounded-lg transition border ${activeRegion === r.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
+          ${r.label}
+        </button>
+      `).join('');
+    }
+
+    function setCategory(cat) {
+      activeCategory = cat;
+      renderCategoryFilters();
+      applyFiltersAndRender();
+    }
+
+    function setRegion(reg) {
+      activeRegion = reg;
+      renderRegionQuadrantFilters();
+      applyFiltersAndRender();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim().toLowerCase();
+      applyFiltersAndRender();
+    }
+
+    function applyFiltersAndRender() {
+      const filtered = locations.filter(item => {
+        const matchRegion = activeRegion === 'ALL' || item.region === activeRegion;
+        const matchCategory = activeCategory === 'ALL' || item.category === activeCategory;
+        const matchSearch = !searchQuery || 
+          item.name.toLowerCase().includes(searchQuery) || 
+          item.krName.toLowerCase().includes(searchQuery) ||
+          (item.note && item.note.toLowerCase().includes(searchQuery));
+        return matchRegion && matchCategory && matchSearch;
+      });
+
+      renderSpotCards(filtered);
+    }
+
+    function renderSpotCards(items) {
+      const container = document.getElementById('spotsGrid');
+      if (!container) return;
+      if (items.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-xs">無符合條件的景點或餐廳</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(spot => `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition relative flex flex-col justify-between">
+          <div>
+            <div class="flex items-start justify-between gap-2 pr-10">
+              <div class="min-w-0 flex-1">
+                <h3 class="font-bold text-sm text-slate-800 truncate pr-2" title="${spot.name}">${spot.name}</h3>
+                <p class="text-[11px] text-slate-500 font-mono truncate pr-2" title="${spot.krName}">${spot.krName}</p>
+              </div>
+            </div>
+
+            <div class="absolute top-4 right-4 text-2xl select-none opacity-90">
+              ${spot.icon || '📍'}
+            </div>
+
+            <p class="text-xs text-slate-600 mt-2 line-clamp-2 bg-slate-50 p-2 rounded-xl">${spot.note || '尚無備註'}</p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+            <div class="flex gap-1.5">
+              <a href="${spot.url}" target="_blank" class="bg-sky-50 hover:bg-sky-100 text-sky-700 px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1">
+                <i class="fa-solid fa-map-location-dot"></i> Naver Map
+              </a>
+              <button onclick="copyText('${spot.krName}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition" title="複製韓文名稱">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+              <button onclick="openEditModal('${spot.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg transition" title="編輯備註與名稱">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+            </div>
+
+            <div class="relative group">
+              <button class="bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded-lg font-medium transition text-xs flex items-center gap-1">
+                <span>+ 排入行程</span>
+              </button>
+              <div class="absolute right-0 bottom-full mb-1 w-36 bg-white border border-slate-200 shadow-xl rounded-xl hidden group-hover:block z-20 py-1">
+                ${itineraryDates.map(d => `
+                  <button onclick="addToItinerary('${spot.id}', ${d.day})" class="w-full text-left px-3 py-1.5 text-[11px] hover:bg-slate-50 text-slate-700">
+                    Day ${d.day} (${d.date})
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderItineraryPlanner() {
+      const container = document.getElementById('itineraryDaysContainer');
+      if (!container) return;
+
+      container.innerHTML = itineraryDates.map(d => {
+        const dayItems = itineraryData[d.day] || [];
+        return `
+          <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+            <div class="bg-slate-100 px-3.5 py-2 flex items-center justify-between">
+              <div>
+                <span class="font-bold text-xs text-slate-800">Day ${d.day} - ${d.date}</span>
+                <span class="text-[10px] text-slate-500 ml-1">(${dayItems.length} 個行程)</span>
+              </div>
+              <button onclick="viewDayRoute(${d.day})" class="text-[11px] text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                <span>🗺️ 車程動線</span>
+              </button>
+            </div>
+
+            <div class="p-2 space-y-2">
+              ${dayItems.length === 0 ? `<p class="text-[11px] text-slate-400 text-center py-2">尚未加入景點</p>` : ''}
+              ${dayItems.map((item, idx) => {
+                const spot = locations.find(l => l.id === item.spotId);
+                if (!spot) return '';
+                return `
+                  <div class="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                      <div class="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
+                        <span class="font-bold text-slate-800">${idx + 1}.</span>
+                        <span class="font-bold text-slate-700 truncate">${spot.name}</span>
+                        <span class="text-xs select-none">${spot.icon || ''}</span>
+                      </div>
+
+                      <div class="flex items-center gap-1 text-slate-400">
+                        <button onclick="moveItineraryItem(${d.day}, ${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-20 cursor-not-allowed px-1"' : 'class="hover:text-sky-600 px-1"'}>
+                          <i class="fa-solid fa-chevron-up text-[10px]"></i>
+                        </button>
+                        <button onclick="moveItineraryItem(${d.day}, ${idx}, 1)" ${idx === dayItems.length - 1 ? 'disabled class="opacity-20 cursor-not-allowed px-1"' : 'class="hover:text-sky-600 px-1"'}>
+                          <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <button onclick="openItineraryModal(${d.day}, ${idx})" class="hover:text-amber-600 px-1" title="編輯時間與當日備註">
+                          <i class="fa-solid fa-pen text-[11px]"></i>
+                        </button>
+                        <button onclick="removeFromItinerary(${d.day}, ${idx})" class="hover:text-rose-500 px-1" title="移除景點">
+                          <i class="fa-solid fa-xmark text-[11px]"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-0.5 border-t border-slate-100">
+                      <span class="font-mono text-sky-700 font-medium">⏰ ${item.time || '未指定時間'}</span>
+                      ${item.customNote ? `<span class="text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded text-[10px] truncate max-w-[180px]">${item.customNote}</span>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addToItinerary(spotId, day) {
+      itineraryData[day].push({ spotId, time: '', customNote: '' });
+      updateLastEditInfo(lastEditInfo.editor || '系統預設');
+      renderItineraryPlanner();
+    }
+
+    function removeFromItinerary(day, idx) {
+      itineraryData[day].splice(idx, 1);
+      updateLastEditInfo(lastEditInfo.editor || '系統預設');
+      renderItineraryPlanner();
+    }
+
+    function moveItineraryItem(day, idx, direction) {
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= itineraryData[day].length) return;
+      const temp = itineraryData[day][idx];
+      itineraryData[day][idx] = itineraryData[day][targetIdx];
+      itineraryData[day][targetIdx] = temp;
+      updateLastEditInfo(lastEditInfo.editor || '系統預設');
+      renderItineraryPlanner();
+    }
+
+    function openItineraryModal(day, idx) {
+      const item = itineraryData[day][idx];
+      if (!item) return;
+      document.getElementById('editItineraryDay').value = day;
+      document.getElementById('editItineraryIndex').value = idx;
+      document.getElementById('editItineraryTime').value = item.time || '';
+      document.getElementById('editItineraryNote').value = item.customNote || '';
+      document.getElementById('editItineraryModal').classList.remove('hidden');
+    }
+
+    function closeItineraryModal() {
+      document.getElementById('editItineraryModal').classList.add('hidden');
+    }
+
+    function saveItineraryEdit() {
+      const day = document.getElementById('editItineraryDay').value;
+      const idx = document.getElementById('editItineraryIndex').value;
+      const time = document.getElementById('editItineraryTime').value;
+      const note = document.getElementById('editItineraryNote').value;
+
+      if (itineraryData[day] && itineraryData[day][idx]) {
+        itineraryData[day][idx].time = time;
+        itineraryData[day][idx].customNote = note;
+        updateLastEditInfo(lastEditInfo.editor || '系統預設');
+        renderItineraryPlanner();
+      }
+      closeItineraryModal();
+    }
+
+    function openEditModal(spotId) {
+      const spot = locations.find(l => l.id === spotId);
+      if (!spot) return;
+      document.getElementById('editSpotId').value = spotId;
+      document.getElementById('editSpotEditor').value = lastEditInfo.editor || '系統預設';
+      document.getElementById('editSpotName').value = spot.name || '';
+      document.getElementById('editSpotKrName').value = spot.krName || '';
+      document.getElementById('editSpotCategory').value = spot.category || 'food';
+      document.getElementById('editSpotIcon').value = spot.icon || '📍';
+      document.getElementById('editSpotNote').value = spot.note || '';
+      document.getElementById('editSpotUrl').value = spot.url || '';
+      document.getElementById('editSpotModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editSpotModal').classList.add('hidden');
+    }
+
+    function saveSpotEdit() {
+      const id = document.getElementById('editSpotId').value;
+      const editor = document.getElementById('editSpotEditor').value || '系統預設';
+      const name = document.getElementById('editSpotName').value.trim();
+      const krName = document.getElementById('editSpotKrName').value.trim();
+      const category = document.getElementById('editSpotCategory').value;
+      const icon = document.getElementById('editSpotIcon').value.trim() || '📍';
+      const note = document.getElementById('editSpotNote').value;
+      const url = document.getElementById('editSpotUrl').value;
+
+      const spot = locations.find(l => l.id === id);
+      if (spot) {
+        if (name) spot.name = name;
+        if (krName) spot.krName = krName;
+        spot.category = category;
+        spot.icon = icon;
+        spot.note = note;
+        spot.url = url;
+        updateLastEditInfo(editor);
+        applyFiltersAndRender();
+        renderItineraryPlanner();
+      }
+      closeEditModal();
+    }
+
+    function deleteCurrentSpot() {
+      const id = document.getElementById('editSpotId').value;
+      const spot = locations.find(l => l.id === id);
+      if (!spot) return;
+
+      if (confirm(`確定要刪除景點「${spot.name}」嗎？此動作亦會將該景點從預排行程中刪除。`)) {
+        locations = locations.filter(l => l.id !== id);
+        Object.keys(itineraryData).forEach(day => {
+          itineraryData[day] = itineraryData[day].filter(item => item.spotId !== id);
+        });
+        updateLastEditInfo(lastEditInfo.editor || '系統預設');
+        applyFiltersAndRender();
+        renderItineraryPlanner();
+        closeEditModal();
+      }
+    }
+
+    function selectEmoji(target, emoji) {
+      if (target === 'add') {
+        const input = document.getElementById('addSpotIcon');
+        if (input) input.value = emoji;
+      } else if (target === 'edit') {
+        const input = document.getElementById('editSpotIcon');
+        if (input) input.value = emoji;
+      }
+    }
+
+    function autoSuggestEmoji(target) {
+      let name = '';
+      let krName = '';
+      if (target === 'add') {
+        name = document.getElementById('addSpotName').value;
+        krName = document.getElementById('addSpotKrName').value;
+      } else if (target === 'edit') {
+        name = document.getElementById('editSpotName').value;
+        krName = document.getElementById('editSpotKrName').value;
+      }
+      const text = (name + ' ' + krName).toLowerCase();
+
+      let emoji = '📍';
+      if (text.includes('烤肉') || text.includes('豬') || text.includes('牛') || text.includes('肉')) emoji = '🥩';
+      else if (text.includes('麵') || text.includes('湯麵') || text.includes('拉麵')) emoji = '🍜';
+      else if (text.includes('海鮮') || text.includes('鮑魚') || text.includes('蝦') || text.includes('魚')) emoji = '🍽️';
+      else if (text.includes('咖啡') || text.includes('cafe')) emoji = '☕';
+      else if (text.includes('麵包') || text.includes('貝果') || text.includes('烘焙')) emoji = '🥐';
+      else if (text.includes('橘') || text.includes('柑')) emoji = '🍊';
+      else if (text.includes('雪') || text.includes('賞雪') || text.includes('1100')) emoji = '❄️';
+      else if (text.includes('花') || text.includes('山茶花')) emoji = '🌺';
+      else if (text.includes('飯店') || text.includes('酒店') || text.includes('호텔')) emoji = '🏨';
+      else if (text.includes('選物') || text.includes('店') || text.includes('周邊') || text.includes('美妝')) emoji = '🛍️';
+      else if (text.includes('市場') || text.includes('公園') || text.includes('主題')) emoji = '🎡';
+
+      selectEmoji(target, emoji);
+    }
+
+    function handleCategorySelectChange(target) {
+      const select = document.getElementById(target === 'add' ? 'addSpotCategory' : 'editSpotCategory');
+      if (select && select.value === '__NEW_CAT__') {
+        const catName = prompt('請輸入新分類名稱：');
+        if (catName && catName.trim()) {
+          const newId = 'cat_' + Date.now();
+          const newCat = { id: newId, label: catName.trim() };
+          customCategories.push(newCat);
+          renderCategoryFilters();
+
+          const option = document.createElement('option');
+          option.value = newId;
+          option.text = catName.trim();
+          select.add(option, select.options[select.options.length - 1]);
+          select.value = newId;
+        } else {
+          select.value = 'food';
+        }
+      }
+    }
+
+    function openAddSpotModal() {
+      document.getElementById('addSpotEditor').value = lastEditInfo.editor || '系統預設';
+      document.getElementById('addSpotName').value = '';
+      document.getElementById('addSpotKrName').value = '';
+      document.getElementById('addSpotCategory').value = 'food';
+      document.getElementById('addSpotRegion').value = 'NW';
+      document.getElementById('addSpotIcon').value = '📍';
+      document.getElementById('addSpotUrl').value = '';
+      document.getElementById('addSpotNote').value = '';
+      document.getElementById('addSpotModal').classList.remove('hidden');
+    }
+
+    function closeAddSpotModal() {
+      document.getElementById('addSpotModal').classList.add('hidden');
+    }
+
+    function saveNewSpot() {
+      const editor = document.getElementById('addSpotEditor').value || '系統預設';
+      const name = document.getElementById('addSpotName').value.trim();
+      const krName = document.getElementById('addSpotKrName').value.trim();
+      const category = document.getElementById('addSpotCategory').value;
+      const region = document.getElementById('addSpotRegion').value;
+      const icon = document.getElementById('addSpotIcon').value.trim() || '📍';
+      const url = document.getElementById('addSpotUrl').value.trim() || 'https://naver.me/';
+      const note = document.getElementById('addSpotNote').value.trim();
+
+      if (!name || !krName) {
+        alert('請填寫景點的中文名稱與韓文名稱！');
+        return;
+      }
+
+      const defaultRegionCoords = {
+        NW: { x: 30, y: 35 },
+        NE: { x: 70, y: 32 },
+        SW: { x: 25, y: 70 },
+        SE: { x: 65, y: 75 }
+      };
+
+      const newSpot = {
+        id: 'spot_' + Date.now(),
+        name,
+        krName,
+        category,
+        region,
+        url,
+        note,
+        icon,
+        coords: defaultRegionCoords[region] || { x: 50, y: 50 }
+      };
+
+      locations.push(newSpot);
+      updateLastEditInfo(editor);
+      applyFiltersAndRender();
+      closeAddSpotModal();
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => {
+        alert('已複製：' + txt);
+      });
+    }
+
+    function viewDayRoute(day) {
+      const items = itineraryData[day] || [];
+      if (items.length === 0) {
+        alert(`Day ${day} 尚未加入任何景點！`);
+        return;
+      }
+
+      document.getElementById('routeModalTitle').innerText = `Day ${day} (${itineraryDates[day-1].date}) 行程與車程路線`;
+      document.getElementById('routeModal').classList.remove('hidden');
+
+      setTimeout(() => {
+        drawRouteCanvas(items);
+        calculateRouteDistances(items);
+      }, 100);
+    }
+
+    function closeRouteModal() {
+      document.getElementById('routeModal').classList.add('hidden');
+    }
+
+    function calculateRouteDistances(items) {
+      const container = document.getElementById('routeLegsContainer');
+      let totalDist = 0;
+      let legsHtml = '';
+
+      for (let i = 0; i < items.length - 1; i++) {
+        const s1 = locations.find(l => l.id === items[i].spotId);
+        const s2 = locations.find(l => l.id === items[i + 1].spotId);
+
+        if (s1 && s2 && s1.coords && s2.coords) {
+          const dx = (s1.coords.x - s2.coords.x) * 0.8;
+          const dy = (s1.coords.y - s2.coords.y) * 0.6;
+          const distKm = Math.round(Math.sqrt(dx * dx + dy * dy) * 1.2);
+          const estMin = Math.max(5, Math.round(distKm * 1.8));
+
+          totalDist += distKm;
+
+          legsHtml += `
+            <div class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200">
+              <span class="truncate pr-2">${i+1}. ${s1.name} ➔ ${s2.name}</span>
+              <span class="font-bold text-sky-600 whitespace-nowrap">約 ${distKm} km (${estMin} 分鐘)</span>
+            </div>
+          `;
+        }
+      }
+
+      document.getElementById('routeSummaryText').innerText = `包含 ${items.length} 個點，預估車程共 ~${totalDist} km`;
+      container.innerHTML = legsHtml || `<p class="text-slate-400 text-center">單一景點無延伸車程</p>`;
+    }
+
+    function drawRouteCanvas(items) {
+      const canvas = document.getElementById('routeCanvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const oceanGrad = ctx.createLinearGradient(0, 0, w, h);
+      oceanGrad.addColorStop(0, '#E0F2FE');
+      oceanGrad.addColorStop(0.5, '#BAE6FD');
+      oceanGrad.addColorStop(1, '#7DD3FC');
+      ctx.fillStyle = oceanGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.arc(w * (0.2 + i * 0.18), h * (0.2 + (i % 2) * 0.5), 60 + i * 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.save();
+      
+      ctx.beginPath();
+      ctx.moveTo(w * 0.12, h * 0.52);
+      ctx.bezierCurveTo(w * 0.18, h * 0.22, w * 0.45, h * 0.18, w * 0.85, h * 0.28);
+      ctx.bezierCurveTo(w * 0.95, h * 0.45, w * 0.88, h * 0.72, w * 0.62, h * 0.82);
+      ctx.bezierCurveTo(w * 0.38, h * 0.88, w * 0.18, h * 0.78, w * 0.12, h * 0.52);
+      ctx.closePath();
+
+      const islandGrad = ctx.createRadialGradient(w * 0.5, h * 0.5, 20, w * 0.5, h * 0.5, w * 0.42);
+      islandGrad.addColorStop(0, '#D9F99D');  
+      islandGrad.addColorStop(0.4, '#A7F3D0'); 
+      islandGrad.addColorStop(0.8, '#FEF08A'); 
+      islandGrad.addColorStop(1, '#CBD5E1');   
+
+      ctx.fillStyle = islandGrad;
+      ctx.shadowColor = 'rgba(14, 116, 144, 0.3)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = '#65A30D';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#047857';
+      ctx.beginPath();
+      ctx.arc(w * 0.48, h * 0.52, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🏔️', w * 0.48, h * 0.52);
+
+      if (items.length === 0) return;
+
+      const spotPoints = items.map(item => {
+        const spot = locations.find(l => l.id === item.spotId);
+        if (!spot || !spot.coords) return null;
+        return {
+          spot,
+          x: (spot.coords.x / 100) * w,
+          y: (spot.coords.y / 100) * h
+        };
+      }).filter(p => p !== null);
+
+      if (spotPoints.length === 0) return;
+
+      ctx.strokeStyle = '#DC2626';
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+
+      spotPoints.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      spotPoints.forEach((pt, i) => {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = i === 0 ? '#10B981' : (i === spotPoints.length - 1 ? '#E11D48' : '#F97316');
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${i + 1}`, pt.x, pt.y);
+      });
+    }
+  </script>
+</body>
+</html>

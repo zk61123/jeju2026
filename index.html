@@ -79,28 +79,24 @@
     }
   </style>
 
-  <!-- 全網跨設備即時雲端儲存 API 引擎 (JSONStorage Engine - 免密鑰、跨域開放通道) -->
+  <!-- 全網跨設備即時雲端儲存 API 引擎 (npoint.io Engine - 全跨域開放通道) -->
   <script>
-    // 濟州島自由行專屬全域雲端儲存通道 (GitHub Pages & 跨設備相容)
-    const CLOUD_STORAGE_KEY = 'zk61123_jeju2026_master_sync_v1';
-    const CLOUD_API_ENDPOINT = `https://api.jsonstorage.net/v1/json/${CLOUD_STORAGE_KEY}`;
+    // 濟州島自由行專屬全域雲端儲存通道 (專為 GitHub Pages 跨設備實時同步設計)
+    const CLOUD_BIN_ID = '08194cfc623be87ec103';
+    const CLOUD_API_ENDPOINT = `https://api.npoint.io/${CLOUD_BIN_ID}`;
 
     window.cloudEngine = {
       async loadData() {
         try {
-          // 使用多重備用公開 REST 節點讀取
-          const res = await fetch(`https://api.counterapi.dev/v1/jeju2026/tripData/get?t=${Date.now()}`, { cache: 'no-store' })
-            .catch(() => null);
-
-          // 核心通用公共 JSON API (無 CORS 阻擋)
-          const mainRes = await fetch(`https://jsonblob.com/api/jsonBlob/1302849201948500000?t=${Date.now()}`, {
+          // 強制加上 timestamp 防止瀏覽器快取舊資料
+          const res = await fetch(`${CLOUD_API_ENDPOINT}?t=${Date.now()}`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             cache: 'no-store'
           }).catch(() => null);
 
-          if (mainRes && mainRes.ok) {
-            const data = await mainRes.json();
+          if (res && res.ok) {
+            const data = await res.json();
             if (data && data.locations && Array.isArray(data.locations)) {
               return data;
             }
@@ -119,29 +115,19 @@
           updatedAt: Date.now()
         });
 
-        let isSaved = false;
-
-        // 1. 主要公開超高速 CORS 雲端資料庫節點
         try {
-          const res = await fetch('https://jsonblob.com/api/jsonBlob/1302849201948500000', {
-            method: 'PUT',
+          const res = await fetch(CLOUD_API_ENDPOINT, {
+            method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'Content-Type': 'application/json'
             },
             body: payload
           });
-          if (res.ok) isSaved = true;
+          return res.ok;
         } catch (e) {
-          console.warn('主要通道寫入重試:', e);
+          console.error('雲端寫入失敗:', e);
+          return false;
         }
-
-        // 2. 備用彈性 KV 儲存節點 (確保 100% 寫入成功)
-        try {
-          await fetch(`https://api.counterapi.dev/v1/jeju2026/tripData/up?t=${Date.now()}`);
-        } catch (e) {}
-
-        return isSaved || true; // 回傳成功 state，避免非同步網路延遲觸發警報
       }
     };
   </script>
@@ -713,7 +699,7 @@
         editor: lastEditInfo.editor || '同行夥伴'
       };
 
-      // 優先寫入本地快取，防止斷網丟失
+      // 優先寫入本地快取
       saveLocationsToStorage();
       saveItineraryToStorage();
       localStorage.setItem('jeju_last_edit', JSON.stringify(lastEditInfo));
@@ -728,8 +714,12 @@
         if (icon) {
           icon.className = 'fa-solid fa-cloud-arrow-up';
         }
-        alert('✅ 成功存檔並發布至雲端！\n現在其他夥伴（晃、快、天）重新開啟 GitHub Pages 時，都會顯示這份最新紀錄。');
-      }, 400);
+        if (success) {
+          alert('✅ 已成功將最新行程同步存入全域雲端！\n現在其他人（晃、快、天）不論用什麼手機或電腦打開網址，都會顯示這份最新檔案！');
+        } else {
+          alert('⚠️ 雲端連線稍微延遲，但資料已暫存於本機。請確認網路狀況後再試一次！');
+        }
+      }, 500);
     }
 
     function saveLocationsToStorage() {

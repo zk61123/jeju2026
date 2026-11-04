@@ -79,69 +79,53 @@
     }
   </style>
 
-  <!-- Firebase 11 SDK (跨平台/Google Sites/GitHub Pages 實時雲端資料庫) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <!-- 全網跨設備即時雲端儲存 API 引擎 (JSONBin Engine) -->
+  <script>
+    // 濟州島自由行專屬全域雲端儲存通道
+    const CLOUD_BIN_ID = '6728a38ae4101579ce3248df';
+    const CLOUD_API_URL = `https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`;
+    const CLOUD_MASTER_KEY = '$2a$10$7vIqK0P9u2/3R1Yc9Zf14eM1g9.E93sI4Z/X8xR0/M18y1';
 
-    // 自訂或預設專屬 Firebase 免費雲端配置 (GitHub Pages 通用)
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      apiKey: "AIzaSyD-JejuTrip2026MasterKeyConfigForGitHub",
-      authDomain: "jeju-2026-trip.firebaseapp.com",
-      projectId: "jeju-2026-trip",
-      storageBucket: "jeju-2026-trip.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abcdef123456"
-    };
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'jeju-2026-trip';
-
-    let app, db, auth;
-    try {
-      app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
-      auth = getAuth(app);
-    } catch(e) {
-      console.log('Firebase Init standard mode');
-    }
-
-    // 全域 Firebase 操作接口 (支援 GitHub Pages 跨裝置實時同步)
-    window.firebaseCloud = {
-      async initAndListen(onDataCallback) {
+    window.cloudEngine = {
+      async loadData() {
         try {
-          if (auth) {
-            await signInAnonymously(auth);
-          }
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tripData', 'masterDoc');
-          
-          // 實時監聽資料庫變化 (Realtime Sync Listener)
-          onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              onDataCallback(data);
-            }
-          }, (err) => {
-            console.warn('Firebase snapshot fallback:', err);
+          const res = await fetch(`${CLOUD_API_URL}/latest?t=${Date.now()}`, {
+            method: 'GET',
+            headers: {
+              'X-Master-Key': CLOUD_MASTER_KEY,
+              'X-Bin-Meta': 'false'
+            },
+            cache: 'no-store'
           });
-        } catch(err) {
-          console.warn('Firebase auth warning:', err);
+          if (res.ok) {
+            const data = await res.json();
+            return data;
+          }
+        } catch (e) {
+          console.warn('雲端讀取重試:', e);
         }
+        return null;
       },
 
       async saveData(locations, itineraryData, lastEditInfo) {
-        if (!db) return false;
         try {
-          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tripData', 'masterDoc');
-          await setDoc(docRef, {
+          const payload = {
             locations,
             itineraryData,
             lastEditInfo,
             updatedAt: Date.now()
+          };
+          const res = await fetch(CLOUD_API_URL, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': CLOUD_MASTER_KEY
+            },
+            body: JSON.stringify(payload)
           });
-          return true;
-        } catch(err) {
-          console.error('Firebase Save Error:', err);
+          return res.ok;
+        } catch (e) {
+          console.error('雲端儲存失敗:', e);
           return false;
         }
       }
@@ -615,25 +599,30 @@
       renderItineraryPlanner();
       applyFiltersAndRender();
 
-      // 初始化雲端實時監聽 (Realtime Firebase Listener)
-      if (window.firebaseCloud) {
-        window.firebaseCloud.initAndListen((data) => {
-          if (data && data.locations) {
-            locations = data.locations;
-            itineraryData = data.itineraryData || itineraryData;
-            lastEditInfo = data.lastEditInfo || lastEditInfo;
+      // 載入即自動同步雲端最新數據
+      fetchCloudData();
 
-            localStorage.setItem('jeju_spots', JSON.stringify(locations));
-            localStorage.setItem('jeju_itinerary', JSON.stringify(itineraryData));
-            localStorage.setItem('jeju_last_edit', JSON.stringify(lastEditInfo));
-
-            updateLastEditBadge();
-            renderItineraryPlanner();
-            applyFiltersAndRender();
-          }
-        });
-      }
+      // 每 10 秒自動輪詢雲端最新變更 (全體夥伴自動同步)
+      setInterval(fetchCloudData, 10000);
     };
+
+    async function fetchCloudData() {
+      if (!window.cloudEngine) return;
+      const data = await window.cloudEngine.loadData();
+      if (data && data.locations) {
+        locations = data.locations;
+        itineraryData = data.itineraryData || itineraryData;
+        lastEditInfo = data.lastEditInfo || lastEditInfo;
+
+        localStorage.setItem('jeju_spots', JSON.stringify(locations));
+        localStorage.setItem('jeju_itinerary', JSON.stringify(itineraryData));
+        localStorage.setItem('jeju_last_edit', JSON.stringify(lastEditInfo));
+
+        updateLastEditBadge();
+        renderItineraryPlanner();
+        applyFiltersAndRender();
+      }
+    }
 
     window.addEventListener('resize', detectAndApplyDeviceLayout);
 
@@ -690,7 +679,11 @@
       const icon = document.getElementById('refreshBtnIcon');
       if (icon) icon.classList.add('fa-spin');
       
-      location.reload();
+      await fetchCloudData();
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove('fa-spin');
+      }, 500);
     }
 
     async function manualSaveToCloud() {
@@ -709,8 +702,8 @@
       updateLastEditBadge();
 
       let success = false;
-      if (window.firebaseCloud) {
-        success = await window.firebaseCloud.saveData(locations, itineraryData, lastEditInfo);
+      if (window.cloudEngine) {
+        success = await window.cloudEngine.saveData(locations, itineraryData, lastEditInfo);
       }
 
       setTimeout(() => {
@@ -718,23 +711,19 @@
           icon.className = 'fa-solid fa-cloud-arrow-up';
         }
         if (success) {
-          alert('✅ 已成功將最新的景點與行程完整同步存檔至雲端！\n所有同行人員開啟網頁均能即時看到此最新版本。');
+          alert('✅ 成功存檔並發布至雲端！\n現在其他夥伴（晃、快、天）重新開啟或重新整理 GitHub Pages 時，都會顯示這份最新紀錄。');
         } else {
-          alert('✅ 修改已儲存至本機快取！若已配置 Firebase，變更會即時推播至所有人的裝置。');
+          alert('⚠️ 儲存失敗，請檢查網路連線後再試一遍。');
         }
       }, 500);
     }
 
     function saveLocationsToStorage() {
-      if (window.firebaseCloud) {
-        window.firebaseCloud.saveData(locations, itineraryData, lastEditInfo);
-      }
+      localStorage.setItem('jeju_spots', JSON.stringify(locations));
     }
 
     function saveItineraryToStorage() {
-      if (window.firebaseCloud) {
-        window.firebaseCloud.saveData(locations, itineraryData, lastEditInfo);
-      }
+      localStorage.setItem('jeju_itinerary', JSON.stringify(itineraryData));
     }
 
     function renderCategoryFilters() {
